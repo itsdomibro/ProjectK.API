@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ProjectK.API.Data;
+using System.Text.Json.Serialization;
 using System.Text;
 
 namespace ProjectK.API
@@ -18,8 +19,12 @@ namespace ProjectK.API
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-            // Add controller support (API endpoints)
-            builder.Services.AddControllers();
+            // Add controller support (API endpoints) and configure JSON to ignore reference cycles
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+                });
 
             // Configure JWT Bearer authentication
             builder.Services.AddAuthentication(options => {
