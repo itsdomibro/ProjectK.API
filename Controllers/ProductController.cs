@@ -34,7 +34,7 @@ namespace ProjectK.API.Controllers
             var query = _context.Products
             .Where(p => p.UserId == ownerId)
             .AsQueryable();
-
+         
             if (categoryId.HasValue)
             {
                 query = query.Where(p => p.CategoryId == categoryId);
@@ -51,7 +51,17 @@ namespace ProjectK.API.Controllers
 
 
             // user id di product  = owner id
-            var products = await query.ToListAsync();
+            var products = await query.Include(p => p.Category).Select(p => new ProductResponseDto
+            {
+                ProductId = p.ProductId,
+                Name = p.Name,
+                Description = p.Description,
+                Price = p.Price,
+                Discount = p.Discount,
+                CategoryId = p.CategoryId,
+                CategoryName = p.Category != null ? p.Category.Name : null,
+                ImageUrl = p.ImageUrl
+            }).ToListAsync();
             return Ok(products);
         }
 
