@@ -75,6 +75,13 @@ namespace ProjectK.API.Controllers
         {
             var ownerId = GetCurrentOwnerId();
 
+            Category? category = null;
+            if (dto.CategoryId.HasValue)
+            {
+                category = await _context.Categories
+                    .FirstOrDefaultAsync(c => c.CategoryId == dto.CategoryId.Value && c.UserId == ownerId);
+            }
+
             var product = new Product
             {
                 ProductId = Guid.NewGuid(),
@@ -90,7 +97,19 @@ namespace ProjectK.API.Controllers
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
 
-            return Ok(product);
+            var response = new ProductResponseDto
+            {
+                ProductId = product.ProductId,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                Discount = product.Discount,
+                CategoryId = product.CategoryId,
+                CategoryName = category?.Name,
+                ImageUrl = product.ImageUrl
+            };
+
+            return Ok(response);
 
         }
 
