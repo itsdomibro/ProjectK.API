@@ -55,6 +55,20 @@ namespace ProjectK.API.Controllers
             return Ok(products);
         }
 
+        [Authorize]
+        [HttpGet("jwt-test")]
+        public async Task<IActionResult> JWTTest()
+        {
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+            // Inbound JWT 'sub' is mapped to ClaimTypes.NameIdentifier by default
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return Ok(
+                new {
+                    role,
+                    userId
+                });
+        }
+
         [HttpPost]
         [Authorize(Roles = "Owner")]
         public async Task<IActionResult> CreateProduct(CreateProductDto dto)
@@ -63,8 +77,8 @@ namespace ProjectK.API.Controllers
 
             var product = new Product
             {
-                UserId = ownerId,
                 ProductId = Guid.NewGuid(),
+                UserId = ownerId,
                 Name = dto.Name,
                 Description = dto.Description,
                 Price = dto.Price,
@@ -83,7 +97,8 @@ namespace ProjectK.API.Controllers
         private Guid GetCurrentOwnerId()
         {
             var role = User.FindFirst(ClaimTypes.Role)?.Value;
-            var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+            // Inbound JWT 'sub' is mapped to ClaimTypes.NameIdentifier by default
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             Console.WriteLine(userId +  role);
 
             if (string.IsNullOrEmpty(role) || string.IsNullOrEmpty(userId))
