@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using ProjectK.API.Data;
+
 namespace ProjectK.API
 {
     public class Program
@@ -6,19 +9,14 @@ namespace ProjectK.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-
+            builder.Services.AddDbContext<AppDbContext>(options =>
+                options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
             builder.Services.AddControllers();
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
-
             app.UseHttpsRedirection();
-
             app.UseAuthorization();
-
-
             app.MapControllers();
 
             app.Run();
