@@ -45,7 +45,9 @@ namespace ProjectK.API.Controllers
         public async Task<IActionResult> CreateCategory(CreateCategoryDto dto)
         {
             var userId = await GetCurrentOwnerIdAsync();
-
+            if (await _context.Categories.AnyAsync(c => c.Name == dto.Name && c.UserId == userId)) {
+                return BadRequest("Category name can't have duplicate");
+            }
 
             var category = new Category
             {

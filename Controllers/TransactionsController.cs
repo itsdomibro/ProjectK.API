@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Identity;
 
 namespace ProjectK.API.Controllers
 {
+    public record ScanRequestDto(string Code);
+
     [Route("api/transactions")]
     [ApiController]
     [Authorize]
@@ -64,15 +66,15 @@ namespace ProjectK.API.Controllers
                 query = query.Where(t => t.IsPaid == filter.IsPaid.Value);
 
             if (!string.IsNullOrEmpty(filter.Payment))
-                query = query.Where(t => t.Payment == filter.Payment);
+                query = query.Where(t => t.Payment.ToLower() == filter.Payment.ToLower());
 
             // --- Sorting ---
             switch (filter.SortBy)
             {
                 case "amount":
                     query = filter.SortOrder == "asc"
-                        ? query.OrderBy(t => t.TransactionDetails.Sum(d => d.Quantity * d.Product.Price))
-                        : query.OrderByDescending(t => t.TransactionDetails.Sum(d => d.Quantity * d.Product.Price));
+                        ? query.OrderBy(t => t.TransactionDetails.Sum(d => d.Quantity * d.Product.Price - d.Product.Discount))
+                        : query.OrderByDescending(t => t.TransactionDetails.Sum(d => d.Quantity * d.Product.Price - d.Product.Discount));
                     break;
 
                 default: // date (KALO GA ADA OTOMATIS DATE BY DESC)
@@ -93,17 +95,57 @@ namespace ProjectK.API.Controllers
                 Payment = t.Payment,
                 IsPaid = t.IsPaid,
                 CreatedAt = t.CreatedAt,
-                TotalAmount = t.TransactionDetails.Sum(d => d.Quantity * d.Product.Price),
+                TotalAmount = t.TransactionDetails.Sum(d => d.Quantity * (d.Product.Price - d.Product.Discount)),
 
                 Details = t.TransactionDetails.Select(d => new TransactionDetailListDto
                 {
                     ProductId = d.ProductId,
                     ProductName = d.Product.Name,
                     Quantity = d.Quantity,
-                    Price = d.Product.Price
+                    Price = d.Product.Price,
+                    Discount = d.Product.Discount
                 }).ToList()
             }).ToList();
 
+            return Ok(result);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            var ownerId = await GetCurrentOwnerIdAsync();
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            var query = _context.Transactions
+                .Where(t => t.UserId == ownerId)
+                .Include(t => t.TransactionDetails)
+                    .ThenInclude(td => td.Product)
+                .AsQueryable();
+
+            if (role == "Cashier") {
+                var today = DateTime.UtcNow;
+                query = query.Where(t => t.CreatedAt.Date == today);
+            }
+
+            var transaction = await query.FirstOrDefaultAsync(t => t.TransactionId == id);
+            if (transaction == null) {
+                return NotFound();
+            }
+
+            var result = new TransactionListDto {
+                TransactionId = transaction.TransactionId,
+                Code = transaction.Code,
+                Payment = transaction.Payment,
+                CreatedAt = transaction.CreatedAt,
+                TotalAmount = transaction.TransactionDetails.Sum(d => d.Quantity * d.Product.Price),
+
+                Details = transaction.TransactionDetails.Select(d => new TransactionDetailListDto {
+                    ProductId = d.ProductId,
+                    ProductName = d.Product.Name,
+                    Quantity = d.Quantity,
+                    Price = d.Product.Price
+                }).ToList()
+            };
             return Ok(result);
         }
 
@@ -136,7 +178,7 @@ namespace ProjectK.API.Controllers
                 TransactionId = Guid.NewGuid(),
                 UserId = ownerId,
                 Payment = dto.Payment,
-                Code = "SKADKAW", // Generate code logic here
+                Code = GenerateCode(),
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = null,
                 IsPaid = false,
@@ -170,49 +212,6 @@ namespace ProjectK.API.Controllers
             });
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(Guid id)
-        {
-            var ownerId = await GetCurrentOwnerIdAsync();
-            var role = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            var query = _context.Transactions
-                .Where(t => t.UserId == ownerId)
-                .Include(t => t.TransactionDetails)
-                    .ThenInclude(td => td.Product)
-                .AsQueryable();
-
-            if(role == "Cashier")
-            {
-                var today = DateTime.UtcNow;
-                query = query.Where(t => t.CreatedAt.Date == today);
-            }
-
-            var transaction = await query.FirstOrDefaultAsync(t => t.TransactionId == id);
-            if(transaction == null)
-            {
-                return NotFound();
-            }
-
-            var result = new TransactionListDto
-            {
-                TransactionId = transaction.TransactionId,
-                Code = transaction.Code,
-                Payment = transaction.Payment,
-                CreatedAt = transaction.CreatedAt,
-                TotalAmount = transaction.TransactionDetails.Sum(d => d.Quantity * d.Product.Price),
-
-                Details = transaction.TransactionDetails.Select(d => new TransactionDetailListDto
-                {
-                    ProductId = d.ProductId,
-                    ProductName = d.Product.Name,
-                    Quantity = d.Quantity,
-                    Price = d.Product.Price
-                }).ToList()
-            };
-            return Ok(result);
-        }
-
         [HttpDelete("{id}")]
         [Authorize(Roles = "Owner")]
         public async Task<IActionResult> Delete(Guid id)
@@ -231,6 +230,27 @@ namespace ProjectK.API.Controllers
 
             await _context.SaveChangesAsync();
             return Ok();
+        }
+
+        [HttpPost("scan")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ScanAndPay([FromBody] ScanRequestDto dto)
+        {
+            var transaction = await _context.Transactions
+                .FirstOrDefaultAsync(t => t.Code == dto.Code && !t.IsDeleted);
+
+            if (transaction == null)
+                return NotFound("Transaction not found.");
+
+            if (transaction.IsPaid)
+                return BadRequest("Transaction already paid.");
+
+            transaction.IsPaid = true;
+            transaction.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { transaction.TransactionId, transaction.Code, Paid = true });
         }
 
         private async Task<Guid> GetCurrentOwnerIdAsync()
@@ -260,6 +280,11 @@ namespace ProjectK.API.Controllers
             }
 
             throw new UnauthorizedAccessException("Role not supported");
+        }
+
+        private string GenerateCode()
+        {
+            return $"TX-{Guid.NewGuid().ToString("N")[..8].ToUpper()}";
         }
     }
 }

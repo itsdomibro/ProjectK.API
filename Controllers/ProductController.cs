@@ -48,7 +48,6 @@ namespace ProjectK.API.Controllers
                 );
             }
 
-
             // user id di product  = owner id
             var products = await query.Include(p => p.Category).Select(p => new ProductResponseDto
             {
@@ -139,8 +138,6 @@ namespace ProjectK.API.Controllers
 
 
             product.UpdatedAt = DateTime.UtcNow;
-
-
 
             await _context.SaveChangesAsync();
             return NoContent();
