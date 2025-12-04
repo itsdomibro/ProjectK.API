@@ -12,7 +12,6 @@ namespace ProjectK.API.Data
         public DbSet<Product> Products { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
-        public DbSet<Payment> Payments { get; set; }
         public DbSet<TransactionDetail> TransactionDetails { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -45,12 +44,6 @@ namespace ProjectK.API.Data
                 .HasForeignKey(t => t.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // User <-> Payments
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.Payments)
-                .WithOne(p => p.User)
-                .HasForeignKey(p => p.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
 
             // Category <-> Products
             modelBuilder.Entity<Category>()
@@ -73,12 +66,6 @@ namespace ProjectK.API.Data
                 .HasForeignKey(td => td.TransactionId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Payment <-> Transactions
-            modelBuilder.Entity<Payment>()
-                .HasMany(p => p.Transactions)
-                .WithOne(t => t.Payment)
-                .HasForeignKey(t => t.PaymentId)
-                .OnDelete(DeleteBehavior.Restrict);
 
             base.OnModelCreating(modelBuilder);
         }
