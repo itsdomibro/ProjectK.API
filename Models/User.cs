@@ -24,6 +24,5 @@ namespace ProjectK.API.Models
         public ICollection<Category> Categories { get; set; } = new List<Category>();
         public ICollection<Product> Products { get; set; } = new List<Product>();
         public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
-        public ICollection<Payment> Payments { get; set; } = new List<Payment>();
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace ProjectK.API.DTOs
+﻿namespace ProjectK.API.DTOs.TransactionDto
 {
     public class TransactionResponseDto
     {
