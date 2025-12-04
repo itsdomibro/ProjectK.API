@@ -74,7 +74,7 @@ namespace ProjectK.API.Controllers
         // ------------------------------------------------------------------
         [HttpPatch("{id}")]
         [Authorize(Roles = "Owner")]
-        public async Task<IActionResult> UpdateCategory(Guid id, CreateCategoryDto dto)
+        public async Task<IActionResult> UpdateCategory(Guid id, EditCategoryDto dto)
         {
             var ownerId = await GetCurrentOwnerIdAsync();
             var category = await _context.Categories
@@ -83,7 +83,13 @@ namespace ProjectK.API.Controllers
             {
                 return NotFound();
             }
-            category.Name = dto.Name;
+
+            if (!string.IsNullOrEmpty(dto.Name))
+                category.Name = dto.Name;
+
+            if (!string.IsNullOrEmpty(dto.Description))
+                category.Description = dto.Description;
+
             category.Description = dto.Description;
             category.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
