@@ -23,10 +23,89 @@ namespace ProjectK.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] TransactionFilterDto filter)
         {
-            
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            // Get ownerId for both owner & cashier
+            var ownerId = await GetCurrentOwnerIdAsync();
+
+
+            // Base query (ambil transaction + detail + product)
+            var query = _context.Transactions
+                .Where(t => t.UserId == ownerId)
+                .Include(t => t.TransactionDetails)
+                    .ThenInclude(td => td.Product)
+                .AsQueryable();
+
+            // Cashier restriction
+            if (role == "Cashier")
+            {
+                var today = DateTime.UtcNow.Date;
+                query = query.Where(t => t.CreatedAt.Date == today);
+            }
+
+            // --- Filtering ---
+            //logic search
+            if (!string.IsNullOrWhiteSpace(filter.Search))
+            {
+                string search = filter.Search.ToLower();
+
+                // logic search lah by transaction id , payment dan productname
+                query = query.Where(t =>
+                    t.TransactionId.ToString().ToLower().Contains(search) || 
+                    t.Payment.ToLower().Contains(search) || 
+                    t.TransactionDetails.Any(td => td.Product.Name.ToLower().Contains(search)));
+            }
+
+            // filter by ispaid & payment
+            if (filter.IsPaid.HasValue)
+                query = query.Where(t => t.IsPaid == filter.IsPaid.Value);
+
+            if (!string.IsNullOrEmpty(filter.Payment))
+                query = query.Where(t => t.Payment == filter.Payment);
+
+            // --- Sorting ---
+            switch (filter.SortBy)
+            {
+                case "amount":
+                    query = filter.SortOrder == "asc"
+                        ? query.OrderBy(t => t.TransactionDetails.Sum(d => d.Quantity * d.Product.Price))
+                        : query.OrderByDescending(t => t.TransactionDetails.Sum(d => d.Quantity * d.Product.Price));
+                    break;
+
+                default: // date (KALO GA ADA OTOMATIS DATE BY DESC)
+                    query = filter.SortOrder == "asc"
+                        ? query.OrderBy(t => t.CreatedAt)
+                        : query.OrderByDescending(t => t.CreatedAt);
+                    break;
+            }
+
+            // ---  ---
+            var list = await query.ToListAsync();
+
+            // --- Mapping to DTO ---
+            var result = list.Select(t => new TransactionListDto
+            {
+                TransactionId = t.TransactionId,
+                Code = t.Code,
+                Payment = t.Payment,
+                IsPaid = t.IsPaid,
+                CreatedAt = t.CreatedAt,
+                TotalAmount = t.TransactionDetails.Sum(d => d.Quantity * d.Product.Price),
+
+                Details = t.TransactionDetails.Select(d => new TransactionDetailListDto
+                {
+                    ProductId = d.ProductId,
+                    ProductName = d.Product.Name,
+                    Quantity = d.Quantity,
+                    Price = d.Product.Price
+                }).ToList()
+            }).ToList();
+
+            return Ok(result);
         }
+
         [HttpPost]
         public async Task<IActionResult> Create(CreateTransactionDto dto)
         {

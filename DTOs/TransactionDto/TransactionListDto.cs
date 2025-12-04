@@ -7,7 +7,7 @@
         public string Payment { get; set; }
         public bool IsPaid { get; set; }
         public DateTime CreatedAt { get; set; }
-        public long TotalAmount { get; set; }
+        public decimal TotalAmount { get; set; }
         public List<TransactionDetailListDto> Details { get; set; } = new();
     }
 
