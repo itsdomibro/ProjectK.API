@@ -6,6 +6,7 @@ using ProjectK.API.Data;
 using System.Security.Claims;
 using ProjectK.API.DTOs.TransactionDto;
 using ProjectK.API.Models;
+using Microsoft.AspNetCore.Identity;
 
 
 namespace ProjectK.API.Controllers
@@ -170,14 +171,65 @@ namespace ProjectK.API.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById()
+        public async Task<IActionResult> GetById(Guid id)
         {
-            return Ok();
+            var ownerId = await GetCurrentOwnerIdAsync();
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            var query = _context.Transactions
+                .Where(t => t.UserId == ownerId)
+                .Include(t => t.TransactionDetails)
+                    .ThenInclude(td => td.Product)
+                .AsQueryable();
+
+            if(role == "Cashier")
+            {
+                var today = DateTime.UtcNow;
+                query = query.Where(t => t.CreatedAt.Date == today);
+            }
+
+            var transaction = await query.FirstOrDefaultAsync(t => t.TransactionId == id);
+            if(transaction == null)
+            {
+                return NotFound();
+            }
+
+            var result = new TransactionListDto
+            {
+                TransactionId = transaction.TransactionId,
+                Code = transaction.Code,
+                Payment = transaction.Payment,
+                CreatedAt = transaction.CreatedAt,
+                TotalAmount = transaction.TransactionDetails.Sum(d => d.Quantity * d.Product.Price),
+
+                Details = transaction.TransactionDetails.Select(d => new TransactionDetailListDto
+                {
+                    ProductId = d.ProductId,
+                    ProductName = d.Product.Name,
+                    Quantity = d.Quantity,
+                    Price = d.Product.Price
+                }).ToList()
+            };
+            return Ok(result);
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete()
+        [Authorize(Roles = "Owner")]
+        public async Task<IActionResult> Delete(Guid id)
         {
+            var ownerId = await GetCurrentOwnerIdAsync();
+            var transaction = await _context.Transactions
+                                            .Where(t => t.UserId == ownerId)
+                                            .Include(t => t.TransactionDetails)
+                                            .FirstOrDefaultAsync(t => t.TransactionId == id);
+            if(transaction == null)
+            {
+                return NotFound();
+            }
+            _context.TransactionDetails.RemoveRange(transaction.TransactionDetails);
+            _context.Transactions.Remove(transaction);
+
+            await _context.SaveChangesAsync();
             return Ok();
         }
 
