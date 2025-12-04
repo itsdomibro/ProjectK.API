@@ -113,7 +113,6 @@ namespace ProjectK.API.Controllers
         public async Task<IActionResult> UpdateProduct(Guid id, CreateProductDto dto)
         {
             var ownerId = await GetCurrentOwnerIdAsync();
-            Console.WriteLine("Owner ID :" + ownerId);
             var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == id && p.UserId == ownerId);
             if(product  == null)
             {
@@ -135,7 +134,6 @@ namespace ProjectK.API.Controllers
         public async Task<IActionResult> DeleteProduct(Guid id)
         {
             var ownerId = await GetCurrentOwnerIdAsync();
-            Console.WriteLine("owner id: " + ownerId);
             var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == id && p.UserId == ownerId);
             if (product == null)
             {

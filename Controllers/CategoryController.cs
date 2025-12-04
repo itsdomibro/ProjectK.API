@@ -77,7 +77,6 @@ namespace ProjectK.API.Controllers
         public async Task<IActionResult> UpdateCategory(Guid id, CreateCategoryDto dto)
         {
             var ownerId = await GetCurrentOwnerIdAsync();
-            Console.WriteLine("Owner ID: " + ownerId);
             var category = await _context.Categories
                 .FirstOrDefaultAsync(c => c.CategoryId == id && c.UserId == ownerId);
             if (category == null)
@@ -100,7 +99,6 @@ namespace ProjectK.API.Controllers
         public async Task<IActionResult> DeleteCategory(Guid id)
         {
             var ownerId = await GetCurrentOwnerIdAsync();
-            Console.WriteLine("Owner ID: " + ownerId);
             var category = await _context.Categories
                 .FirstOrDefaultAsync(c => c.CategoryId == id && c.UserId == ownerId);
             if (category == null)
