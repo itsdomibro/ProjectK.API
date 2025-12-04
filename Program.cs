@@ -41,6 +41,18 @@ namespace ProjectK.API
                 };
             });
 
+            // Add CORS policy for React frontend
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("ReactAppPolicy", policy =>
+                {
+                    policy.WithOrigins("http://localhost:3000")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
+                });
+            });
+
             // Add role-based authorization support
             builder.Services.AddAuthorization();
 
@@ -90,6 +102,9 @@ namespace ProjectK.API
 
             // Enforce HTTPS
             app.UseHttpsRedirection();
+
+            // Enable CORS
+            app.UseCors("ReactAppPolicy");
 
             // Enable authentication and authorization middleware
             app.UseAuthentication();
