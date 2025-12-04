@@ -9,7 +9,7 @@ namespace ProjectK.API.Models
         public User User { get; set; } = null!;
 
         public bool IsPaid { get; set; } = false;
-        public string Payment { get; set; }
+        public string Payment { get; set; } = string.Empty;
         public string Code { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }

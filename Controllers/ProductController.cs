@@ -48,7 +48,6 @@ namespace ProjectK.API.Controllers
                 );
             }
 
-
             // user id di product  = owner id
             var products = await query.Include(p => p.Category).Select(p => new ProductResponseDto
             {
@@ -110,7 +109,7 @@ namespace ProjectK.API.Controllers
 
         [HttpPatch("{id}")]
         [Authorize(Roles = "Owner")]
-        public async Task<IActionResult> UpdateProduct(Guid id, CreateProductDto dto)
+        public async Task<IActionResult> UpdateProduct(Guid id, EditProductDto dto)
         {
             var ownerId = await GetCurrentOwnerIdAsync();
             var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == id && p.UserId == ownerId);
@@ -118,13 +117,28 @@ namespace ProjectK.API.Controllers
             {
                 return NotFound();
             }
-            product.Name = dto.Name;
-            product.Description = dto.Description;
-            product.Price = dto.Price;
-            product.Discount = dto.Discount;
-            product.CategoryId = dto.CategoryId;
-            product.ImageUrl = dto.ImageUrl;
+
+            if (!string.IsNullOrEmpty(dto.Name))
+                product.Name = dto.Name;
+
+            if (!string.IsNullOrEmpty(dto.Description))
+                product.Description = dto.Description;
+
+            if (dto.Price.HasValue)
+                product.Price = dto.Price.Value;
+
+            if (dto.Discount.HasValue)
+                product.Discount = dto.Discount.Value;
+
+            if (dto.CategoryId != null)
+                product.CategoryId = dto.CategoryId;
+
+            if (!string.IsNullOrEmpty(dto.ImageUrl))
+                product.ImageUrl = dto.ImageUrl;
+
+
             product.UpdatedAt = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
             return NoContent();
         }

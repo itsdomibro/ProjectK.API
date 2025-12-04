@@ -12,7 +12,7 @@ using ProjectK.API.Data;
 namespace ProjectK.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251202060037_InitialMigration")]
+    [Migration("20251204131000_InitialMigration")]
     partial class InitialMigration
     {
         /// <inheritdoc />
@@ -52,32 +52,6 @@ namespace ProjectK.API.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Categories");
-                });
-
-            modelBuilder.Entity("ProjectK.API.Models.Payment", b =>
-                {
-                    b.Property<Guid>("PaymentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("PaymentId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Payments");
                 });
 
             modelBuilder.Entity("ProjectK.API.Models.Product", b =>
@@ -142,8 +116,9 @@ namespace ProjectK.API.Migrations
                     b.Property<bool>("IsPaid")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid>("PaymentId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("Payment")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -152,8 +127,6 @@ namespace ProjectK.API.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("TransactionId");
-
-                    b.HasIndex("PaymentId");
 
                     b.HasIndex("UserId");
 
@@ -252,17 +225,6 @@ namespace ProjectK.API.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ProjectK.API.Models.Payment", b =>
-                {
-                    b.HasOne("ProjectK.API.Models.User", "User")
-                        .WithMany("Payments")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("ProjectK.API.Models.Product", b =>
                 {
                     b.HasOne("ProjectK.API.Models.Category", "Category")
@@ -283,19 +245,11 @@ namespace ProjectK.API.Migrations
 
             modelBuilder.Entity("ProjectK.API.Models.Transaction", b =>
                 {
-                    b.HasOne("ProjectK.API.Models.Payment", "Payment")
-                        .WithMany("Transactions")
-                        .HasForeignKey("PaymentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("ProjectK.API.Models.User", "User")
                         .WithMany("Transactions")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Payment");
 
                     b.Navigation("User");
                 });
@@ -334,11 +288,6 @@ namespace ProjectK.API.Migrations
                     b.Navigation("Products");
                 });
 
-            modelBuilder.Entity("ProjectK.API.Models.Payment", b =>
-                {
-                    b.Navigation("Transactions");
-                });
-
             modelBuilder.Entity("ProjectK.API.Models.Product", b =>
                 {
                     b.Navigation("TransactionDetails");
@@ -354,8 +303,6 @@ namespace ProjectK.API.Migrations
                     b.Navigation("Cashiers");
 
                     b.Navigation("Categories");
-
-                    b.Navigation("Payments");
 
                     b.Navigation("Products");
 

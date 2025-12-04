@@ -46,6 +46,8 @@ namespace ProjectK.API
                 };
             });
 
+            builder.Services.AddHttpClient();
+
             // Add CORS policy for React frontend
             builder.Services.AddCors(options =>
             {

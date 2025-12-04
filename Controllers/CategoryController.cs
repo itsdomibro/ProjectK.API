@@ -45,7 +45,9 @@ namespace ProjectK.API.Controllers
         public async Task<IActionResult> CreateCategory(CreateCategoryDto dto)
         {
             var userId = await GetCurrentOwnerIdAsync();
-
+            if (await _context.Categories.AnyAsync(c => c.Name == dto.Name && c.UserId == userId)) {
+                return BadRequest("Category name can't have duplicate");
+            }
 
             var category = new Category
             {
@@ -74,7 +76,7 @@ namespace ProjectK.API.Controllers
         // ------------------------------------------------------------------
         [HttpPatch("{id}")]
         [Authorize(Roles = "Owner")]
-        public async Task<IActionResult> UpdateCategory(Guid id, CreateCategoryDto dto)
+        public async Task<IActionResult> UpdateCategory(Guid id, EditCategoryDto dto)
         {
             var ownerId = await GetCurrentOwnerIdAsync();
             var category = await _context.Categories
@@ -83,7 +85,13 @@ namespace ProjectK.API.Controllers
             {
                 return NotFound();
             }
-            category.Name = dto.Name;
+
+            if (!string.IsNullOrEmpty(dto.Name))
+                category.Name = dto.Name;
+
+            if (!string.IsNullOrEmpty(dto.Description))
+                category.Description = dto.Description;
+
             category.Description = dto.Description;
             category.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
