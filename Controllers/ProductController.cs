@@ -29,8 +29,7 @@ namespace ProjectK.API.Controllers
             [FromQuery] Guid? categoryId)
         {
             
-            var ownerId = GetCurrentOwnerId();
-
+            var ownerId = await GetCurrentOwnerIdAsync();
             var query = _context.Products
             .Where(p => p.UserId == ownerId)
             .AsQueryable();
@@ -69,7 +68,7 @@ namespace ProjectK.API.Controllers
         [Authorize(Roles = "Owner")]
         public async Task<IActionResult> CreateProduct(CreateProductDto dto)
         {
-            var ownerId = GetCurrentOwnerId();
+            var ownerId = await GetCurrentOwnerIdAsync();
 
             Category? category = null;
             if (dto.CategoryId.HasValue)
@@ -109,10 +108,48 @@ namespace ProjectK.API.Controllers
 
         }
 
-        private Guid GetCurrentOwnerId()
+        [HttpPatch("{id}")]
+        [Authorize(Roles = "Owner")]
+        public async Task<IActionResult> UpdateProduct(Guid id, CreateProductDto dto)
         {
+            var ownerId = await GetCurrentOwnerIdAsync();
+            Console.WriteLine("Owner ID :" + ownerId);
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == id && p.UserId == ownerId);
+            if(product  == null)
+            {
+                return NotFound();
+            }
+            product.Name = dto.Name;
+            product.Description = dto.Description;
+            product.Price = dto.Price;
+            product.Discount = dto.Discount;
+            product.CategoryId = dto.CategoryId;
+            product.ImageUrl = dto.ImageUrl;
+            product.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Owner")]
+        public async Task<IActionResult> DeleteProduct(Guid id)
+        {
+            var ownerId = await GetCurrentOwnerIdAsync();
+            Console.WriteLine("owner id: " + ownerId);
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == id && p.UserId == ownerId);
+            if (product == null)
+            {
+                return NotFound();
+            }
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        private async Task<Guid> GetCurrentOwnerIdAsync()
+        {
+
             var role = User.FindFirst(ClaimTypes.Role)?.Value;
-            // Inbound JWT 'sub' is mapped to ClaimTypes.NameIdentifier by default
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(role) || string.IsNullOrEmpty(userId))
@@ -120,10 +157,10 @@ namespace ProjectK.API.Controllers
 
             var currentUserId = Guid.Parse(userId);
 
-            var user = _context.Users.FirstOrDefault(u => u.UserId == currentUserId);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == currentUserId);
 
-            if(user == null)
-                throw new UnauthorizedAccessException("User not found.");   
+            if (user == null)
+                throw new UnauthorizedAccessException("User not found.");
 
             if (role == "Owner")
             {
@@ -136,6 +173,6 @@ namespace ProjectK.API.Controllers
             }
 
             throw new UnauthorizedAccessException("Role not supported");
-        } 
+        }
     }
 }
