@@ -56,7 +56,8 @@ namespace ProjectK.API
                     policy.WithOrigins("http://localhost:3000")
                           .AllowAnyHeader()
                           .AllowAnyMethod()
-                          .AllowCredentials();
+                          .AllowCredentials()
+                          .SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost");
                 });
             });
 
