@@ -94,6 +94,7 @@ namespace ProjectK.API.Controllers
                 .GetProperty("parts")[0]
                 .GetProperty("text")
                 .GetString()!;
+        }
         
         private static async Task<T> GetAsync<T>(HttpClient client, string url)
         {
