@@ -63,6 +63,33 @@ namespace ProjectK.API.Controllers
             return Ok(products);
         }
 
+        [HttpGet("{id}")]
+        [Authorize]
+        public async Task<IActionResult> GetProductById(Guid id)
+        {
+            var ownerId = await GetCurrentOwnerIdAsync();
+            var product = await _context.Products
+                                    .Where(p => p.UserId == ownerId && p.ProductId == id)
+                                    .Include(p => p.Category)
+                                    .Select(p => new ProductResponseDto
+                                    {
+                                        ProductId = p.ProductId,
+                                        Name = p.Name,
+                                        Description = p.Description,
+                                        Price = p.Price,
+                                        Discount = p.Discount,
+                                        CategoryId = p.CategoryId,
+                                        CategoryName = p.Category != null ? p.Category.Name : null,
+                                        ImageUrl = p.ImageUrl
+                                    })
+                                    .FirstOrDefaultAsync();
+            if (product == null)
+            {
+                return NotFound(new {message = "Product not found!"});
+            }
+            return Ok(product);
+        }
+
         [HttpPost]
         [Authorize(Roles = "Owner")]
         public async Task<IActionResult> CreateProduct(CreateProductDto dto)
