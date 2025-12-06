@@ -64,7 +64,6 @@ namespace ProjectK.API.Controllers
         private async Task<string> AskGeminiAsync(string prompt)
         {
             var apiKey = _config["Gemini:ApiKey"];
-            Console.WriteLine(apiKey);
             var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={apiKey}";
 
             var body = new
@@ -95,89 +94,7 @@ namespace ProjectK.API.Controllers
                 .GetProperty("parts")[0]
                 .GetProperty("text")
                 .GetString()!;
-        }
-
-
-        //private async Task<string> AskGeminiAsync(string prompt)
-        //{
-        //    var apiKey = _config["Gemini:ApiKey"];
-        //    if (string.IsNullOrEmpty(apiKey))
-        //        throw new Exception("Gemini API key not found");
-
-        //    using var client = new HttpClient();
-
-        //    var requestBody = new
-        //    {
-        //        contents = new[]
-        //        {
-        //    new { parts = new[] { new { text = prompt } } }
-        //}
-        //    };
-
-        //    var json = JsonSerializer.Serialize(requestBody);
-
-        //    var request = new HttpRequestMessage(HttpMethod.Post,
-        //        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent");
-
-        //    request.Headers.Add("x-goog-api-key", apiKey);
-        //    request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        //    var response = await client.SendAsync(request);
-        //    if (response.StatusCode == (HttpStatusCode)429)
-        //    {
-        //        await Task.Delay(2000);
-        //    }
-        //    response.EnsureSuccessStatusCode();
-
-        //    var responseJson = await response.Content.ReadAsStringAsync();
-        //    var result = JsonDocument.Parse(responseJson);
-
-        //    return result.RootElement
-        //        .GetProperty("candidates")[0]
-        //        .GetProperty("content")
-        //        .GetProperty("parts")[0]
-        //        .GetProperty("text")
-        //        .GetString();
-        //}
-
-        //private async Task<string> AskClaudeAsync(string prompt)
-        //{
-        //    var apiKey = _config["Claude:ApiKey"];
-        //    if (string.IsNullOrEmpty(apiKey))
-        //        throw new Exception("Claude API key not found");
-
-        //    var requestBody = new {
-        //        model = "claude-3-opus-20240229", // or claude-3-sonnet, claude-3-haiku
-        //        max_tokens = 500,
-        //        messages = new[]
-        //        {
-        //        new { role = "user", content = prompt }
-        //    }
-        //    };
-
-        //    var json = JsonSerializer.Serialize(requestBody);
-
-        //    var request = new HttpRequestMessage(HttpMethod.Post,
-        //        "https://api.anthropic.com/v1/messages");
-
-        //    request.Headers.Add("x-api-key", apiKey);
-        //    request.Headers.Add("anthropic-version", "2023-06-01");
-        //    request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        //    using var client = new HttpClient();
-        //    var response = await client.SendAsync(request);
-        //    response.EnsureSuccessStatusCode();
-
-        //    var responseJson = await response.Content.ReadAsStringAsync();
-        //    var result = JsonDocument.Parse(responseJson);
-
-        //    return result.RootElement
-        //        .GetProperty("content")[0]
-        //        .GetProperty("text")
-        //        .GetString();
-        //}
-
-
+        
         private static async Task<T> GetAsync<T>(HttpClient client, string url)
         {
             var resp = await client.GetAsync(url);
