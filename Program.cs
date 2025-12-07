@@ -51,13 +51,17 @@ namespace ProjectK.API
             // Add CORS policy for React frontend
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("ReactAppPolicy", policy =>
+                options.AddPolicy("FrontendPolicy", policy =>
                 {
-                    policy.WithOrigins("http://localhost:3000")
-                          .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .AllowCredentials()
-                          .SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost");
+                    policy.WithOrigins(
+                        "http://localhost:3000",
+                        "https://projectk-web.vercel.app",
+                        "https://projectk-web-git-main-donniesan76-5816s-projects.vercel.app",
+                        "https://projectk-38a34aybo-donniesan76-5816s-projects.vercel.app"
+                    )
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
                 });
             });
 
@@ -103,16 +107,14 @@ namespace ProjectK.API
             var app = builder.Build();
 
             // Enable Swagger UI in development mode
-            if (app.Environment.IsDevelopment()) {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+            app.UseSwagger();
+            app.UseSwaggerUI();
 
             // Enforce HTTPS
             app.UseHttpsRedirection();
 
             // Enable CORS
-            app.UseCors("ReactAppPolicy");
+            app.UseCors("FrontendPolicy");
 
             // Enable authentication and authorization middleware
             app.UseAuthentication();
