@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace ProjectK.API.Controllers
 {
-    [Route("api/category")]
+    [Route("api/categories")]
     [ApiController]
     [Authorize]
     public class CategoryController : ControllerBase
@@ -20,26 +20,71 @@ namespace ProjectK.API.Controllers
         {
             _context = context;
         }
+
+        //[HttpGet]
+        //public async Task<IActionResult> GetCategories()
+        //{
+        //    var ownerId = await GetCurrentOwnerIdAsync();
+
+        //    var categories = await _context.Categories
+        //        .Where(c => c.UserId == ownerId).Select(c => new CategoryResponseDto
+        //        {
+        //            CategoryId = c.CategoryId,
+        //            Name = c.Name,
+        //            Description = c.Description
+        //        }).ToListAsync();
+        //    return Ok(categories);
+        //}
+
         [HttpGet]
         public async Task<IActionResult> GetCategories()
         {
             var ownerId = await GetCurrentOwnerIdAsync();
 
             var categories = await _context.Categories
-                .Where(c => c.UserId == ownerId).Select(c => new CategoryResponseDto
-                {
+                .Where(c => c.UserId == ownerId).Select(c => new CategoryResponseDto {
                     CategoryId = c.CategoryId,
                     Name = c.Name,
-                    Description = c.Description
+                    Description = c.Description,
+                    Color = c.Color
                 }).ToListAsync();
             return Ok(categories);
         }
-
 
         // ------------------------------------------------------------------
         // POST: api/categories
         // Hanya Owner yang boleh membuat Category
         // ------------------------------------------------------------------
+        //[HttpPost]
+        //[Authorize(Roles = "Owner")]
+        //public async Task<IActionResult> CreateCategory(CreateCategoryDto dto)
+        //{
+        //    var userId = await GetCurrentOwnerIdAsync();
+        //    if (await _context.Categories.AnyAsync(c => c.Name == dto.Name && c.UserId == userId)) {
+        //        return BadRequest("Category name can't have duplicate");
+        //    }
+
+        //    var category = new Category
+        //    {
+        //        CategoryId = Guid.NewGuid(),
+        //        UserId = userId,
+        //        Name = dto.Name,
+        //        Description = dto.Description,
+        //        CreatedAt = DateTime.UtcNow,
+        //        UpdatedAt = DateTime.UtcNow,
+        //    };
+
+        //    _context.Categories.Add(category);
+        //    await _context.SaveChangesAsync();
+
+        //    return CreatedAtAction(nameof(GetCategories), new { id = category.CategoryId }, new CategoryResponseDto
+        //    {
+        //        CategoryId = category.CategoryId,
+        //        Name = category.Name,
+        //        Description = category.Description
+        //    });
+        //}
+
         [HttpPost]
         [Authorize(Roles = "Owner")]
         public async Task<IActionResult> CreateCategory(CreateCategoryDto dto)
@@ -49,12 +94,12 @@ namespace ProjectK.API.Controllers
                 return BadRequest("Category name can't have duplicate");
             }
 
-            var category = new Category
-            {
+            var category = new Category {
                 CategoryId = Guid.NewGuid(),
                 UserId = userId,
                 Name = dto.Name,
                 Description = dto.Description,
+                Color = dto.Color, // <-- Simpan Warna
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
             };
@@ -62,11 +107,11 @@ namespace ProjectK.API.Controllers
             _context.Categories.Add(category);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetCategories), new { id = category.CategoryId }, new CategoryResponseDto
-            {
+            return CreatedAtAction(nameof(GetCategories), new { id = category.CategoryId }, new CategoryResponseDto {
                 CategoryId = category.CategoryId,
                 Name = category.Name,
-                Description = category.Description
+                Description = category.Description,
+                Color = category.Color // <-- Kembalikan Warna
             });
         }
 
@@ -74,6 +119,29 @@ namespace ProjectK.API.Controllers
         // PATCH: api/categories/{id}
         // Hanya Owner yang boleh update Category (harus punya category tersebut)
         // ------------------------------------------------------------------
+        //[HttpPatch("{id}")]
+        //[Authorize(Roles = "Owner")]
+        //public async Task<IActionResult> UpdateCategory(Guid id, EditCategoryDto dto)
+        //{
+        //    var ownerId = await GetCurrentOwnerIdAsync();
+        //    var category = await _context.Categories
+        //        .FirstOrDefaultAsync(c => c.CategoryId == id && c.UserId == ownerId);
+        //    if (category == null)
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    if (!string.IsNullOrEmpty(dto.Name))
+        //        category.Name = dto.Name;
+
+        //    if (!string.IsNullOrEmpty(dto.Description))
+        //        category.Description = dto.Description;
+
+        //    category.Description = dto.Description;
+        //    category.UpdatedAt = DateTime.UtcNow;
+        //    await _context.SaveChangesAsync();
+        //    return NoContent();
+        //}
         [HttpPatch("{id}")]
         [Authorize(Roles = "Owner")]
         public async Task<IActionResult> UpdateCategory(Guid id, EditCategoryDto dto)
@@ -81,18 +149,14 @@ namespace ProjectK.API.Controllers
             var ownerId = await GetCurrentOwnerIdAsync();
             var category = await _context.Categories
                 .FirstOrDefaultAsync(c => c.CategoryId == id && c.UserId == ownerId);
-            if (category == null)
-            {
+            if (category == null) {
                 return NotFound();
             }
 
-            if (!string.IsNullOrEmpty(dto.Name))
-                category.Name = dto.Name;
+            if (!string.IsNullOrEmpty(dto.Name)) category.Name = dto.Name;
+            if (!string.IsNullOrEmpty(dto.Description)) category.Description = dto.Description;
+            if (!string.IsNullOrEmpty(dto.Color)) category.Color = dto.Color; // <-- Update Warna
 
-            if (!string.IsNullOrEmpty(dto.Description))
-                category.Description = dto.Description;
-
-            category.Description = dto.Description;
             category.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             return NoContent();
